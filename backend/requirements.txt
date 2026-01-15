@@ -11,3 +11,5 @@ joblib
 jinja2
 python-multipart
 pydantic
+python-dotenv
+
