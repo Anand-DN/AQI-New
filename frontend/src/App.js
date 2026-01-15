@@ -126,9 +126,9 @@ const runTTest = async () => {
   setAPostHoc(null);
   try {
     const payload = {
-      cities: aCities.map((c) => c.value),
+      cities: aCities.map(c => c.value),
       pollutant: aPollutant,
-      year: year
+      year
     };
     const res = await axios.post(`${API_BASE_URL}/api/anova`, payload, { withCredentials: true });
     setAResult(res.data);
@@ -154,7 +154,7 @@ const runTTest = async () => {
   try {
     const payload = {
       cities: cCities.map((c) => c.value),
-      year: year
+      year
     };
     const res = await axios.post(`${API_BASE_URL}/api/chisquare`, payload, { withCredentials: true });
     setCResult(res.data);
@@ -650,6 +650,7 @@ const runTTest = async () => {
 }
 
 export default App;
+
 
 
 
