@@ -101,7 +101,7 @@ const runTTest = async () => {
       pollutant: tPollutant,
       year: year
     };
-    const res = await axios.post(`${API_BASE_URL}/api/ttest`, payload);
+    const res = await axios.post(`${API_BASE_URL}/api/ttest`, payload, { withCredentials: true });
     setTResult(res.data);
     setTPlot(res.data.plot);
   } catch (err) {
@@ -130,7 +130,7 @@ const runTTest = async () => {
       pollutant: aPollutant,
       year: year
     };
-    const res = await axios.post(`${API_BASE_URL}/api/anova`, payload);
+    const res = await axios.post(`${API_BASE_URL}/api/anova`, payload, { withCredentials: true });
     setAResult(res.data);
     setAPlot(res.data.plot);
     setAPostHoc(res.data.posthoc);
@@ -156,7 +156,7 @@ const runTTest = async () => {
       cities: cCities.map((c) => c.value),
       year: year
     };
-    const res = await axios.post(`${API_BASE_URL}/api/chisquare`, payload);
+    const res = await axios.post(`${API_BASE_URL}/api/chisquare`, payload, { withCredentials: true });
     setCResult(res.data);
     setCPlot(res.data.plot);
   } catch (err) {
@@ -650,5 +650,6 @@ const runTTest = async () => {
 }
 
 export default App;
+
 
 
