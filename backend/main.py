@@ -582,6 +582,29 @@ def generate_visualizations(df):
     plt.legend()
     plots['density'] = fig_to_base64(fig)
 
+     # Violin
+    fig, ax = plt.subplots(figsize=(9,5))
+    sns.violinplot(data=df, x='city', y=value_col, ax=ax)
+    plots['violin'] = fig_to_base64(fig)
+
+    # Scatter
+    fig, ax = plt.subplots(figsize=(8,5))
+    ax.scatter(df['timestamp'], df[value_col], s=8)
+    plt.xticks(rotation=20)
+    plots['scatter'] = fig_to_base64(fig)
+
+    # Hexbin
+    fig, ax = plt.subplots(figsize=(7,5))
+    ax.hexbin(df[value_col], df[value_col].rolling(3).mean(), gridsize=30)
+    plots['hexbin'] = fig_to_base64(fig)
+
+    # Correlation Heatmap
+    corr = df[['aqi','pm25','pm10','o3','no2','so2','co']].corr(method='spearman')
+    fig, ax = plt.subplots(figsize=(7,5))
+    sns.heatmap(corr, annot=True, cmap='coolwarm', fmt=".2f", ax=ax)
+    plots['correlation_heatmap'] = fig_to_base64(fig)
+
+
     return plots
 
 
@@ -729,3 +752,4 @@ if __name__ == "__main__":
         port=8000,
         reload=True
     )
+
