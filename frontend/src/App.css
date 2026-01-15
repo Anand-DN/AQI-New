@@ -1,0 +1,625 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.App {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+header {
+  margin-top: 0;
+  padding-top: 20px;
+}
+
+header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+}
+
+header p {
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+.controls-panel {
+  background: white;
+  border-radius: 15px;
+  padding: 30px;
+  max-width: 800px;
+  margin: 0 auto 30px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.control-group {
+  margin-bottom: 20px;
+}
+
+.control-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.control-group select,
+.control-group input {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+.control-group select:focus,
+.control-group input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.analyze-btn {
+  width: 100%;
+  padding: 15px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.analyze-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.analyze-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: #e74c3c;
+  padding: 10px;
+  margin-top: 10px;
+  background: #ffeaea;
+  border-radius: 5px;
+  border-left: 4px solid #e74c3c;
+}
+
+.results-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.results-container h2 {
+  color: white;
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 2rem;
+}
+
+.stats-section,
+.viz-section,
+.summary-section,
+.predictions-section {
+  background: white;
+  border-radius: 15px;
+  padding: 25px;
+  margin-bottom: 20px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.stats-section h3,
+.viz-section h3,
+.summary-section h3,
+.predictions-section h3 {
+  margin-bottom: 20px;
+  color: #333;
+  border-bottom: 3px solid #667eea;
+  padding-bottom: 10px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+.stat-card {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 20px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #667eea;
+}
+
+/* Correlation Matrix Styles */
+.correlation-info {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.correlation-info p {
+  margin-bottom: 10px;
+  color: #555;
+}
+
+.correlation-info ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.correlation-info li {
+  padding: 5px 0;
+  color: #666;
+}
+
+.correlation-table-container {
+  overflow-x: auto;
+  margin-top: 15px;
+}
+
+.correlation-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.correlation-table th {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 12px;
+  text-align: center;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+.correlation-table td {
+  padding: 12px;
+  text-align: center;
+  font-weight: 600;
+  border: 1px solid #e0e0e0;
+  transition: all 0.2s;
+}
+
+body {
+  margin: 0;
+}
+
+.correlation-table tbody th {
+  background: #f8f9fa;
+  color: #333;
+  font-weight: 600;
+  text-align: left;
+}
+
+.correlation-table td:hover {
+  transform: scale(1.1);
+  z-index: 10;
+}
+
+/* Color coding for correlation values */
+.corr-cell.high-positive {
+  background-color: #d32f2f;
+  color: white;
+}
+
+.corr-cell.medium-positive {
+  background-color: #ff6f00;
+  color: white;
+}
+
+.corr-cell.low-positive {
+  background-color: #ffeb3b;
+  color: #333;
+}
+
+.corr-cell.low-negative {
+  background-color: #e3f2fd;
+  color: #333;
+}
+
+.corr-cell.medium-negative {
+  background-color: #64b5f6;
+  color: white;
+}
+
+.corr-cell.high-negative {
+  background-color: #1976d2;
+  color: white;
+}
+
+.viz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+  gap: 20px;
+}
+
+.viz-card {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.viz-card h4 {
+  margin-bottom: 15px;
+  color: #667eea;
+  text-align: center;
+  font-size: 14px;
+}
+
+.viz-card img {
+  width: 100%;
+  border-radius: 8px;
+}
+
+.summary-text {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 10px;
+  line-height: 1.8;
+  font-family: "Courier New", monospace;
+}
+
+.summary-text pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin: 0;
+  font-size: 14px;
+  color: #333;
+}
+
+.forecast-values {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.forecast-item {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-left: 4px solid #667eea;
+}
+
+.forecast-item span:first-child {
+  font-weight: 600;
+  color: #666;
+}
+
+.forecast-item span:last-child {
+  font-size: 18px;
+  font-weight: 700;
+  color: #667eea;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  header h1 {
+    font-size: 1.8rem;
+  }
+
+  .controls-panel {
+    padding: 20px;
+  }
+
+  .viz-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .correlation-table {
+    font-size: 12px;
+  }
+
+  .correlation-table th,
+  .correlation-table td {
+    padding: 8px;
+  }
+}
+
+.predictions-section {
+  background: white;
+  border-radius: 15px;
+  padding: 25px;
+  margin-bottom: 20px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.current-aqi {
+  background: #e3f2fd;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: 18px;
+}
+
+.forecast-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.forecast-card {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 10px;
+  border-left: 4px solid #667eea;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.forecast-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.forecast-date {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.forecast-value {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.forecast-range {
+  font-size: 14px;
+  color: #888;
+}
+
+.model-info {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+.model-info p {
+  margin: 5px 0;
+  color: #555;
+}
+
+/* ========================= */
+/* HYPOTHESIS TEST SECTIONS  */
+/* ========================= */
+
+.test-section {
+  background: white;
+  border-radius: 15px;
+  padding: 25px;
+  margin-bottom: 20px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.test-section h2 {
+  margin-bottom: 15px;
+  color: #333;
+  font-size: 1.6rem;
+  border-bottom: 3px solid #764ba2;
+  padding-bottom: 8px;
+}
+
+.test-section h3 {
+  font-size: 1.2rem;
+  color: #444;
+  margin-bottom: 10px;
+}
+
+.test-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.test-row .react-select__control {
+  min-width: 180px;
+}
+
+.test-btn {
+  padding: 12px 18px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.test-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 12px rgba(102, 126, 234, 0.3);
+}
+
+.test-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.test-result {
+  margin-top: 15px;
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 10px;
+}
+
+.test-result p {
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.test-result strong {
+  color: #764ba2;
+}
+
+/* ========================= */
+/* PLOTS (STACKED, HEATMAP)   */
+/* ========================= */
+
+.test-plot {
+  margin: 20px 0;
+  text-align: center;
+}
+
+.test-plot img {
+  width: 100%;
+  max-width: 600px;
+  border-radius: 10px;
+}
+
+/* ========================= */
+/* POST-HOC HEATMAP           */
+/* ========================= */
+
+.posthoc-container {
+  margin-top: 15px;
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+}
+
+.posthoc-title {
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+/* ========================= */
+/* CHI-SQUARE SECTION         */
+/* ========================= */
+
+.chi-grid {
+  display: grid;
+  gap: 15px;
+}
+
+.chi-info {
+  background: #e3f2fd;
+  padding: 10px 15px;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.chi-info strong {
+  color: #1976d2;
+}
+
+/* ========================= */
+/* RESPONSIVE SUPPORT         */
+/* ========================= */
+
+@media (max-width: 768px) {
+  .test-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .test-btn {
+    width: 100%;
+  }
+}
+
+/* Center Layout for New Test Panels */
+.test-section {
+  max-width: 1200px;
+  margin: 0 auto 20px; /* center + spacing */
+  display: block;
+}
+
+/* Harmonize with old sections */
+.test-section {
+  border-radius: 15px;
+  padding: 25px;
+  background: white;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Title Alignment + Icon Spacing */
+.test-section h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+/* Input Layout */
+.test-row {
+  margin-bottom: 15px;
+}
+
+/* Spread selects evenly */
+.test-row > * {
+  flex: 1;
+}
+
+/* Center Buttons */
+.test-btn {
+  margin-top: 10px;
+  display: block;
+}
+
+/* Fix Full-Width Select stretching */
+.react-select-container {
+  width: 100%;
+  max-width: 450px;
+}
+
+/* Center Select Inputs */
+.test-row {
+  justify-content: center;
+}
+
+/* Chi-square fits symmetry */
+.chi-grid {
+  max-width: 800px;
+  margin: 0 auto 10px;
+}
+
+.test-section + .test-section {
+  margin-top: 30px;
+}
