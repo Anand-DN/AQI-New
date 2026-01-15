@@ -36,15 +36,16 @@ from statsmodels.graphics.gofplots import qqplot
 load_dotenv()
 app = FastAPI(title="AQI Analysis API", version="2.0.0")
 
+origins = [
+    "https://aqi-new-2.onrender.com",
+    "http://localhost:3000",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://aqi-new-2.onrender.com",
-        "https://*.onrender.com",
-        "http://localhost:3000"           
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=origins,
+    allow_credentials=False,  # IMPORTANT (or add cookie rules)
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -874,6 +875,7 @@ if __name__ == "__main__":
         port=8000,
         reload=True
     )
+
 
 
 
