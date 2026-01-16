@@ -359,15 +359,17 @@ function App() {
 
                 {/* Pollutants */}
                 {results.qqplots_pollutants &&
-                  Object.keys(results.qqplots_pollutants).map((p, idx) => (
-                    <div key={idx} className="qq-card">
-                      <h4>{p.toUpperCase()}</h4>
-                      <img
-                        src={`data:image/png;base64,${results.qqplots_pollutants[p]}`}
-                        style={{ width: "100%", borderRadius: "8px" }}
-                      />
-                    </div>
-                  ))}
+                  CPCB.map((p) => results.qqplots_pollutants[p])
+                    .filter(Boolean)
+                    .map((p, idx) => (
+                      <div key={idx} className="qq-card">
+                        <h4>{p.toUpperCase()}</h4>
+                        <img
+                          src={`data:image/png;base64,${p}`}
+                          style={{ width: "100%", borderRadius: "8px" }}
+                        />
+                      </div>
+                    ))}
               </div>
             </section>
           )}
@@ -725,28 +727,6 @@ function App() {
             <section className="summary-section">
               <h3>🤖 AI Summary</h3>
               <pre className="summary-text">{results.ai_summary}</pre>
-            </section>
-          )}
-          {/* =======================================================
-              🔮 FORECAST
-              ======================================================= */}
-          {results.predictions && !results.predictions.error && (
-            <section className="predictions-section">
-              <h3>🔮 Forecast — {results.predictions.forecast_period} steps</h3>
-
-              <div className="forecast-grid">
-                {results.predictions.forecasted_values.map((v, i) => (
-                  <div key={i} className="forecast-card">
-                    <div className="forecast-value">{v.toFixed(2)}</div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-          {results.predictions && results.predictions.error && (
-            <section className="predictions-section">
-              <h3>Forecast Status</h3>
-              <div className="error-message">{results.predictions.error}</div>
             </section>
           )}
         </div>
