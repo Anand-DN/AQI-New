@@ -689,51 +689,59 @@ async def anova_api(req: ANOVARequest):
     if len(df['city'].unique()) < 2:
         raise HTTPException(status_code=400, detail="Need 2+ cities for ANOVA")
 
-    # Build groups
-    groups = [df[df['city']==c][pol] for c in req.cities]
-    if sum(len(g)>2 for g in groups) < 2:
+    # ----- Build sample groups -----
+    groups = [df[df['city'] == c][pol] for c in req.cities]
+    if sum(len(g) > 2 for g in groups) < 2:
         raise HTTPException(status_code=400, detail="Insufficient samples")
 
-    # ---------- ANOVA ----------
+    # ----- ANOVA -----
     fstat, pval = f_oneway(*groups)
 
-    # ---------- TUKEY HSD ----------
+    # ----- TUKEY HSD -----
     tukey = pairwise_tukeyhsd(df[pol], df['city'], alpha=0.05)
+    tukey_summary = tukey.summary()
 
-    tukey_table = []
-    for i in range(len(tukey.meandiffs)):
-        g1 = tukey.groupsunique[tukey.pairindices[i][0]]
-        g2 = tukey.groupsunique[tukey.pairindices[i][1]]
-        tukey_table.append({
-            "group1": str(g1),
-            "group2": str(g2),
-            "meandiff": float(tukey.meandiffs[i]),
-            "p_adj": float(tukey.pvalues[i]),
-            "reject": bool(tukey.reject[i])
-        })
+    # Convert tukey.summary() → dict
+    cols = tukey_summary.data[0]
+    rows = tukey_summary.data[1:]
+    tukey_df = pd.DataFrame(rows, columns=cols)
 
-    # ---------- BOX ----------
+    # Normalize types for JSON
+    tukey_df["meandiff"] = tukey_df["meandiff"].astype(float)
+    tukey_df["p-adj"] = tukey_df["p-adj"].astype(float)
+    tukey_df["reject"] = tukey_df["reject"].astype(bool)
+
+    tukey_table = tukey_df.to_dict(orient="records")
+
+    # ----- BOX PLOT -----
     fig, ax = plt.subplots(figsize=(9,5))
     sns.boxplot(data=df, x='city', y=pol, ax=ax)
     plt.xticks(rotation=20)
     box_plot = fig_to_base64(fig)
+    plt.close(fig)
 
-    # ---------- VIOLIN ----------
+    # ----- VIOLIN PLOT -----
     fig, ax = plt.subplots(figsize=(9,5))
     sns.violinplot(data=df, x='city', y=pol, ax=ax)
     plt.xticks(rotation=20)
     violin_plot = fig_to_base64(fig)
+    plt.close(fig)
 
-    # ---------- TUKEY HEATMAP ----------
-    uniq = list(tukey.groupsunique)
-    mat = pd.DataFrame(0, index=uniq, columns=uniq)
+    # ----- TUKEY HEATMAP -----
+    labels = sorted(df['city'].unique())
+    mat = pd.DataFrame(0, index=labels, columns=labels)
+
     for r in tukey_table:
-        mat.loc[r["group1"], r["group2"]] = 1 if r["reject"] else 0
-        mat.loc[r["group2"], r["group1"]] = 1 if r["reject"] else 0
+        g1 = r["group1"]
+        g2 = r["group2"]
+        reject = r["reject"]
+        mat.loc[g1, g2] = 1 if reject else 0
+        mat.loc[g2, g1] = 1 if reject else 0
 
     fig, ax = plt.subplots(figsize=(7,5))
-    sns.heatmap(mat, annot=True, cmap='Reds', cbar=False)
+    sns.heatmap(mat, annot=True, cmap='Reds', cbar=False, ax=ax)
     tukey_plot = fig_to_base64(fig)
+    plt.close(fig)
 
     return convert_np({
         "fstat": float(fstat),
@@ -744,6 +752,7 @@ async def anova_api(req: ANOVARequest):
         "box_plot": box_plot,
         "violin_plot": violin_plot
     })
+
 
 # ================================================
 # SECTION — CHI-SQUARE (City × AQI Category)
