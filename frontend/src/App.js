@@ -503,10 +503,10 @@ function App() {
                     <div className="test-result" style={{ fontSize: "15px" }}>
                       {/* ---- Hypotheses ---- */}
                       <div style={{ marginBottom: "8px" }}>
-                        <strong>H₀:</strong> Mean pollutant level is equal
+                        <strong>H₀:</strong> Mean {tPollutant} level is equal
                         between {tCity1.value} and {tCity2.value}
                         <br />
-                        <strong>H₁:</strong> Mean pollutant level differs
+                        <strong>H₁:</strong> Mean {tPollutant} level differs
                         between {tCity1.value} and {tCity2.value}
                       </div>
 
@@ -557,8 +557,8 @@ function App() {
                       {/* ---- Decision ---- */}
                       <p style={{ fontWeight: 600, marginTop: "6px" }}>
                         {tResult.pvalue < 0.05
-                          ? "❌ Reject H₀ → Significant difference"
-                          : "✔ Fail to reject H₀ → No significant difference"}
+                          ? "❌ Reject  Null Hypothesis (H₀) → Significant difference"
+                          : "✔ Accept Null Hypothesis (H₀) → No significant difference"}
                       </p>
 
                       {/* ---- Tabs ---- */}
@@ -659,7 +659,7 @@ function App() {
                     <div className="test-result" style={{ fontSize: "15px" }}>
                       {/* ---- Hypotheses ---- */}
                       <div style={{ marginBottom: "8px" }}>
-                        <strong>H₀:</strong> Mean pollutant levels are equal
+                        <strong>H₀:</strong> Mean {aPollutant} levels are equal
                         across the selected cities
                         <br />
                         <strong>H₁:</strong> At least one city mean differs
