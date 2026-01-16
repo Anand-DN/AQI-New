@@ -778,3 +778,27 @@ body {
     gap: 10px;
   }
 }
+
+.qq-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 15px;
+}
+
+.qq-card {
+  background: white;
+  border-radius: 12px;
+  padding: 14px;
+  border: 1px solid #e7e7e7;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.normality-row {
+  font-size: 15px;
+  margin: 4px 0;
+}
+
+.normality-row strong {
+  width: 80px;
+  display: inline-block;
+}
