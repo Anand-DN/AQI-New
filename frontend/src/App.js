@@ -370,7 +370,7 @@ function App() {
               </div>
             </section>
           )}
-
+         console.log(results.qqplots)
           {/* =======================================================
     NORMALITY TESTS — GROUPED SECTION
    ======================================================= */}
@@ -756,3 +756,4 @@ function App() {
 }
 
 export default App;
+
