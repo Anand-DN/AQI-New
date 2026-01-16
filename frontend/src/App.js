@@ -281,7 +281,6 @@ function App() {
               </div>
             </div>
           </section>
-
           {/* -------------------- VISUALIZATION DROPDOWN -------------------- */}
           <section className="viz-section">
             <h3>📈 Visualizations</h3>
@@ -312,7 +311,6 @@ function App() {
               />
             )}
           </section>
-
           {/* -------------------- CORRELATION SECTION -------------------- */}
           {results.correlation_matrix && (
             <section className="stats-section">
@@ -340,53 +338,67 @@ function App() {
                 )}
             </section>
           )}
-
           {/* -------------------- NORMALITY + QQ (AQI) -------------------- */}
           {results.qqplot_aqi && (
+            /* =======================================================
+    QQ PLOTS — GRID (AQI + Pollutants)
+   ======================================================= */
             <section className="viz-section">
-              <h3>📉 QQ Plot — AQI</h3>
-              <img
-                src={`data:image/png;base64,${results.qqplot_aqi}`}
-                style={{ width: "100%", borderRadius: "10px" }}
-              />
-            </section>
-          )}
-
-          {results.normality_aqi && (
-            <section className="stats-section">
-              <h3>🧪 Shapiro Normality — AQI</h3>
-              <p>Statistic: {results.normality_aqi.statistic?.toFixed(4)}</p>
-              <p>P-value: {results.normality_aqi.pvalue?.toFixed(5)}</p>
-              <p style={{ fontWeight: "600" }}>
-                {results.normality_aqi.pvalue < 0.05
-                  ? "❌ Non-normal (reject H₀)"
-                  : "✔ Normal (fail to reject H₀)"}
-              </p>
-            </section>
-          )}
-
-          {/* -------------------- NORMALITY + QQ (Pollutants) -------------------- */}
-          {results.qqplots_pollutants &&
-            Object.keys(results.qqplots_pollutants).map((p, idx) => (
-              <section key={idx} className="viz-section">
-                <h3>📉 QQ Plot — {p.toUpperCase()}</h3>
-                <img
-                  src={`data:image/png;base64,${results.qqplots_pollutants[p]}`}
-                  style={{ width: "100%", borderRadius: "10px" }}
-                />
-
-                {results.normality_pollutants?.[p] && (
-                  <div style={{ marginTop: "6px" }}>
-                    <strong>P-value:</strong>{" "}
-                    {results.normality_pollutants[p].pvalue.toFixed(5)} —{" "}
-                    {results.normality_pollutants[p].is_normal
-                      ? "✔ Normal"
-                      : "❌ Not Normal"}
+              <h3>📉 QQ Plots (AQI + Pollutants)</h3>
+              <div className="qq-grid">
+                {/* AQI */}
+                {results.qqplot_aqi && (
+                  <div className="qq-card">
+                    <h4>AQI</h4>
+                    <img
+                      src={`data:image/png;base64,${results.qqplot_aqi}`}
+                      style={{ width: "100%", borderRadius: "8px" }}
+                    />
                   </div>
                 )}
-              </section>
-            ))}
 
+                {/* Pollutants */}
+                {results.qqplots_pollutants &&
+                  Object.keys(results.qqplots_pollutants).map((p, idx) => (
+                    <div key={idx} className="qq-card">
+                      <h4>{p.toUpperCase()}</h4>
+                      <img
+                        src={`data:image/png;base64,${results.qqplots_pollutants[p]}`}
+                        style={{ width: "100%", borderRadius: "8px" }}
+                      />
+                    </div>
+                  ))}
+              </div>
+            </section>
+          )}
+          {/* =======================================================
+    NORMALITY TESTS — GROUPED SECTION
+   ======================================================= */}
+          <section className="stats-section">
+            <h3>🧪 Shapiro Normality Tests</h3>
+
+            {/* AQI */}
+            {results.normality_aqi && (
+              <div className="normality-row">
+                <strong>AQI:</strong> p=
+                {results.normality_aqi.pvalue.toFixed(5)} —
+                {results.normality_aqi.pvalue < 0.05
+                  ? " ❌ Non-normal"
+                  : " ✔ Normal"}
+              </div>
+            )}
+
+            {/* Pollutants */}
+            {results.normality_pollutants &&
+              Object.entries(results.normality_pollutants).map(
+                ([p, v], idx) => (
+                  <div key={idx} className="normality-row">
+                    <strong>{p.toUpperCase()}:</strong> p={v.pvalue.toFixed(5)}{" "}
+                    —{v.is_normal ? " ✔ Normal" : " ❌ Non-normal"}
+                  </div>
+                )
+              )}
+          </section>
           {/* =======================================================
                ADVANCED STATISTICAL TESTS PANEL
                ======================================================= */}
@@ -706,7 +718,6 @@ function App() {
               </>
             )}
           </section>
-
           {/* =======================================================
               🤖 AI SUMMARY
               ======================================================= */}
@@ -716,7 +727,6 @@ function App() {
               <pre className="summary-text">{results.ai_summary}</pre>
             </section>
           )}
-
           {/* =======================================================
               🔮 FORECAST
               ======================================================= */}
@@ -733,7 +743,6 @@ function App() {
               </div>
             </section>
           )}
-
           {results.predictions && results.predictions.error && (
             <section className="predictions-section">
               <h3>Forecast Status</h3>
