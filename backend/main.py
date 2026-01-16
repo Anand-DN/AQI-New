@@ -43,10 +43,9 @@ BACKEND = "https://aqi-new-1.onrender.com"
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        FRONTEND,
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://127.0.0.1:8000",
+        "https://aqi-new-1.onrender.com",
+        "https://aqi-new-2.onrender.com",
+        "http://localhost:3000"
     ],
     allow_credentials=True,
     allow_methods=["*"],
