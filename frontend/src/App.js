@@ -3,6 +3,8 @@ import React, { useEffect, useState } from "react";
 import Select from "react-select";
 import "./App.css";
 
+const CPCB = ["pm25", "pm10", "o3", "no2", "so2", "co"];
+
 /* ===========================================================
    CONFIG
    =========================================================== */
@@ -339,38 +341,36 @@ function App() {
             </section>
           )}
           {/* -------------------- NORMALITY + QQ (AQI) -------------------- */}
-          {results.qqplot_aqi && (
-            /* =======================================================
-    QQ PLOTS — GRID (AQI + Pollutants)
-   ======================================================= */
+          {results.qqplots && (
             <section className="viz-section">
               <h3>📉 QQ Plots (AQI + Pollutants)</h3>
+
               <div className="qq-grid">
                 {/* AQI */}
-                {results.qqplot_aqi && (
+                {results.qqplots.aqi && (
                   <div className="qq-card">
                     <h4>AQI</h4>
                     <img
-                      src={`data:image/png;base64,${results.qqplot_aqi}`}
+                      src={`data:image/png;base64,${results.qqplots.aqi}`}
                       style={{ width: "100%", borderRadius: "8px" }}
                     />
                   </div>
                 )}
 
-                {/* Pollutants */}
-                {results.qqplots_pollutants &&
-                  Object.keys(results.qqplots_pollutants).map((p, idx) => (
-                    <div key={idx} className="qq-card">
-                      <h4>{p.toUpperCase()}</h4>
-                      <img
-                        src={`data:image/png;base64,${results.qqplots_pollutants[p]}`}
-                        style={{ width: "100%", borderRadius: "8px" }}
-                      />
-                    </div>
-                  ))}
+                {/* Pollutants (CPCB Order Guarantee) */}
+                {CPCB.filter((p) => results.qqplots[p]).map((p, idx) => (
+                  <div key={idx} className="qq-card">
+                    <h4>{p.toUpperCase()}</h4>
+                    <img
+                      src={`data:image/png;base64,${results.qqplots[p]}`}
+                      style={{ width: "100%", borderRadius: "8px" }}
+                    />
+                  </div>
+                ))}
               </div>
             </section>
           )}
+
           {/* =======================================================
     NORMALITY TESTS — GROUPED SECTION
    ======================================================= */}
