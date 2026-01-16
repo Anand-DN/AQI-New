@@ -16,7 +16,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from scipy.stats import (
-    spearmanr, shapiro, ttest_ind,
+    spearmanr, shapiro, kstest, normaltest, ttest_ind,
     mannwhitneyu, f_oneway
 )
 
@@ -88,6 +88,36 @@ async def preload_data():
             print("⚠ No AQI dataset found at startup.")
     except Exception as e:
         print("Startup error:", e)
+
+
+
+from scipy.stats import shapiro, kstest, normaltest
+
+vals = df[p].dropna()
+
+results = {}
+
+# Shapiro
+if len(vals) < 5000:
+    stat, pval = shapiro(vals)
+    results["shapiro"] = (float(stat), float(pval))
+
+# KS (always ok)
+ks_stat, ks_p = kstest(vals, 'norm')
+results["ks"] = (float(ks_stat), float(ks_p))
+
+# D'Agostino
+dag_stat, dag_p = normaltest(vals)
+results["dagostino"] = (float(dag_stat), float(dag_p))
+
+# Final decision (logic)
+normal = ( (pval>0.05 if len(vals)<5000 else True) and ks_p>0.05 and dag_p>0.05 )
+
+normality_pollutants[p] = {
+   "tests": results,
+   "is_normal": bool(normal)
+}
+
 
 # ================================================
 # REQUEST MODELS
@@ -276,6 +306,7 @@ def generate_qq(df):
             qqplot(vals, line='s')
             plt.title(f"QQ Plot — {p.upper()}")
             qq[p] = fig_to_base64(fig)
+            plt.close(fig)
         except Exception:
             qq[p] = None
 
