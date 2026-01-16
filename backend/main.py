@@ -299,10 +299,10 @@ def compute_correlation(df):
         return {"matrix":None,"pairs":None}
 
     data = df[use].dropna()
-    if len(data)<5:
+    if len(data) < 5:
         return {"matrix":None,"pairs":None}
 
-    # Matrix
+    # ----- MATRIX (Spearman) -----
     corr_mat, p_mat = {}, {}
     for i in use:
         corr_mat[i] = {}
@@ -312,18 +312,45 @@ def compute_correlation(df):
             corr_mat[i][j] = float(rho)
             p_mat[i][j] = float(p)
 
-    # Flatten pairs
+    # ----- PAIRWISE TESTS -----
     pairs = {}
-    for a,b in itertools.combinations(use,2):
-        rho, p = spearmanr(data[a], data[b], nan_policy="omit")
+    for a, b in itertools.combinations(use, 2):
+        d1, d2 = data[a], data[b]
+
+        # Always Spearman here (non-parametric)
+        rho, p = spearmanr(d1, d2, nan_policy="omit")
+        method = "Spearman (non-parametric)"
+
+        # A-style wording
+        H0 = f"No monotonic correlation between {a.upper()} and {b.upper()}"
+        H1 = f"Monotonic correlation exists between {a.upper()} and {b.upper()}"
+
+        # Style-2 decision
+        decision = (
+            "Reject Null Hypothesis (H₀) → Significant correlation"
+            if p < 0.05 else
+            "Accept Null Hypothesis (H₀) → No significant correlation"
+        )
+
+        # p formatting
+        if p < 1e-4:
+            p_fmt = "< 0.0001"
+        else:
+            p_fmt = f"{p:.5f}"
+
         pairs[f"{a}-{b}"] = {
             "rho": float(rho),
             "p": float(p),
-            "significant": bool(p<0.05),
-            "method": "spearman"
+            "p_fmt": p_fmt,
+            "method": method,
+            "H0": H0,
+            "H1": H1,
+            "decision": decision,
+            "significant": bool(p < 0.05),
         }
 
     return {"matrix": corr_mat, "pairs": pairs}
+
 
 # ================================================
 # VISUALIZATION SECTION (BOX, DENSITY, HIST, ETC)
@@ -396,40 +423,6 @@ def generate_visualizations(df):
 
     return plots
 
-# ================================================
-# FORECAST SECTION (OPTIONAL - unchanged)
-# ================================================
-
-from statsmodels.tsa.arima.model import ARIMA
-
-def generate_predictions(df, predict_months=None, predict_year=None):
-    try:
-        val = 'aqi' if 'aqi' in df.columns else 'value'
-        date_col = 'timestamp' if 'timestamp' in df.columns else 'date'
-        if date_col not in df.columns:
-            return {"error":"no date column"}
-
-        df = df[[date_col,val]].dropna()
-        df[date_col] = pd.to_datetime(df[date_col])
-        df = df.sort_values(date_col)
-
-        if len(df)<10:
-            return {"error":f"insufficient data {len(df)}"}
-
-        df = df.groupby(date_col)[val].mean()
-        periods = predict_months or (12 if predict_year else 6)
-
-        model = ARIMA(df, order=(1,1,1)).fit()
-        forecast = model.forecast(periods)
-
-        return {
-            "forecasted_values": forecast.tolist(),
-            "method": "ARIMA(1,1,1)",
-            "forecast_period": periods
-        }
-
-    except Exception as e:
-        return {"error":str(e)}
 
 # ================================================
 # AI SUMMARY SECTION
@@ -595,28 +588,52 @@ async def ttest_api(req: TTestRequest):
     if len(c1)<3 or len(c2)<3:
         raise HTTPException(status_code=400, detail="Insufficient samples for test")
 
-    # Normality detection (Shapiro)
+    # ---------- Normality ----------
     sh1, p1 = shapiro(c1) if len(c1)<5000 else (None, 0.01)
     sh2, p2 = shapiro(c2) if len(c2)<5000 else (None, 0.01)
-
     normal = (p1>0.05 and p2>0.05)
 
-    if normal:
-        stat, p = ttest_ind(c1, c2, equal_var=False)
-        method = "t-test (Welch)"
-    else:
-        stat, p = mannwhitneyu(c1, c2, alternative="two-sided")
-        method = "Mann-Whitney U"
+    # ---------- Hypotheses ----------
+    H0 = f"No difference in {pol.upper()} levels between {req.city1} and {req.city2}"
+    H1 = f"{pol.upper()} levels differ between {req.city1} and {req.city2}"
 
+    # ---------- Test Selection ----------
+    if normal:
+        method = "Welch t-test"
+        stat, p = ttest_ind(c1, c2, equal_var=False)
+
+        # Welch degrees of freedom
+        df_w = (
+            (c1.var()/len(c1) + c2.var()/len(c2))**2 /
+            ((c1.var()/len(c1))**2/(len(c1)-1) + (c2.var()/len(c2))**2/(len(c2)-1))
+        )
+        df_final = float(df_w)
+
+    else:
+        method = "Mann–Whitney U (non-parametric)"
+        stat, p = mannwhitneyu(c1, c2, alternative="two-sided")
+        df_final = None  # MWU has no df
+
+    # ---------- Effect Size (Cohen's d) ----------
     effect = cohens_d(c1.values, c2.values)
 
-    # CPCB category stacking
+    # ---------- Decision (Style-2) ----------
+    decision = (
+        "Reject Null Hypothesis (H₀) → Significant difference"
+        if p < 0.05 else
+        "Accept Null Hypothesis (H₀) → No significant difference"
+    )
+
+    # ---------- p Formatting ----------
+    p_fmt = "< 0.0001" if p < 1e-4 else f"{p:.5f}"
+
+    # ---------- STACKED VISUALS (unchanged) ----------
     cats = ["Good","Satisfactory","Moderate","Poor","Very Poor","Severe"]
     df['cat'] = df[pol].apply(lambda v: pollutant_to_cpcb_category(pol,v))
     c1_cats = category_counts(df[df['city']==req.city1], 'cat', cats)
     c2_cats = category_counts(df[df['city']==req.city2], 'cat', cats)
 
-    # ========== STACKED BAR (Counts) ==========
+    # Stacked Bar
     fig, ax = plt.subplots(figsize=(8,5))
     bottom1, bottom2 = 0, 0
     for cat in cats:
@@ -627,7 +644,7 @@ async def ttest_api(req: TTestRequest):
     ax.set_title(f"{pol.upper()} Category Counts")
     stacked_bar = fig_to_base64(fig)
 
-    # ========== STACKED AREA (Smooth) ==========
+    # Stacked Area
     fig, ax = plt.subplots(figsize=(8,5))
     idx = np.arange(len(cats))
     arr1 = np.array([c1_cats.get(c,0) for c in cats])
@@ -639,7 +656,7 @@ async def ttest_api(req: TTestRequest):
     ax.legend()
     stacked_area = fig_to_base64(fig)
 
-    # ========== DENSITY ==========
+    # Density
     fig, ax = plt.subplots(figsize=(8,5))
     sns.kdeplot(c1, fill=True, label=req.city1)
     sns.kdeplot(c2, fill=True, label=req.city2)
@@ -647,7 +664,7 @@ async def ttest_api(req: TTestRequest):
     ax.legend()
     density = fig_to_base64(fig)
 
-    # ========== BOX ==========
+    # Box
     fig, ax = plt.subplots(figsize=(6,5))
     ax.boxplot([c1, c2], labels=[req.city1, req.city2])
     ax.set_title(f"{pol.upper()} Box Plot")
@@ -655,11 +672,20 @@ async def ttest_api(req: TTestRequest):
 
     return convert_np({
         "method": method,
-        "statistic": stat,
-        "pvalue": p,
-        "effect_size": effect,
+        "pollutant": pol.upper(),
+        "city1": req.city1,
+        "city2": req.city2,
+
+        "H0": H0,
+        "H1": H1,
+
+        "statistic": float(stat),
+        "pvalue": float(p),
+        "p_fmt": p_fmt,
+        "df": df_final,
+        "effect_size": float(effect),
         "normality": {req.city1:p1, req.city2:p2},
-        "decision": "reject H0" if p<0.05 else "fail to reject H0",
+        "decision": decision,
 
         "stacked_bar": stacked_bar,
         "stacked_area": stacked_area,
@@ -671,6 +697,8 @@ async def ttest_api(req: TTestRequest):
             req.city2: c2_cats
         }
     })
+    
+
 # ================================================
 # SECTION — ANOVA (Continuous + Tukey Post-Hoc)
 # ================================================
@@ -689,64 +717,109 @@ async def anova_api(req: ANOVARequest):
     if len(df['city'].unique()) < 2:
         raise HTTPException(status_code=400, detail="Need 2+ cities for ANOVA")
 
-    # ----- Build sample groups -----
-    groups = [df[df['city'] == c][pol] for c in req.cities]
-    if sum(len(g) > 2 for g in groups) < 2:
+    # ----- Groups -----
+    groups = [df[df['city']==c][pol] for c in req.cities]
+    if sum(len(g)>2 for g in groups) < 2:
         raise HTTPException(status_code=400, detail="Insufficient samples")
 
     # ----- ANOVA -----
     fstat, pval = f_oneway(*groups)
 
-    # ----- TUKEY HSD -----
+    # ----- DF -----
+    k = len(groups)
+    N = sum(len(g) for g in groups)
+    df_between = k - 1
+    df_within = N - k
+
+    # ----- H0 / H1 (A-style) -----
+    H0 = f"Mean {pol.upper()} levels are equal across selected cities"
+    H1 = f"At least one city differs in {pol.upper()} levels"
+
+    # ----- Decision (Style-2) -----
+    decision = (
+        "Reject Null Hypothesis (H₀) → Significant difference"
+        if pval < 0.05 else
+        "Accept Null Hypothesis (H₀) → No significant difference"
+    )
+
+    # ----- p formatting -----
+    p_fmt = "< 0.0001" if pval < 1e-4 else f"{pval:.5f}"
+
+    # ----- Effect Size (η²) -----
+    grand_mean = df[pol].mean()
+    ss_between = sum(len(g)*(g.mean()-grand_mean)**2 for g in groups)
+    ss_total = sum((x-grand_mean)**2 for x in df[pol])
+    eta_sq = ss_between/ss_total if ss_total>0 else 0.0
+
+    # ----- Tukey -----
     tukey = pairwise_tukeyhsd(df[pol], df['city'], alpha=0.05)
-    tukey_summary = tukey.summary()
-
-    # Convert tukey.summary() → dict
-    cols = tukey_summary.data[0]
-    rows = tukey_summary.data[1:]
+    tbl = tukey.summary()
+    cols = tbl.data[0]
+    rows = tbl.data[1:]
     tukey_df = pd.DataFrame(rows, columns=cols)
-
-    # Normalize types for JSON
-    tukey_df["meandiff"] = tukey_df["meandiff"].astype(float)
-    tukey_df["p-adj"] = tukey_df["p-adj"].astype(float)
     tukey_df["reject"] = tukey_df["reject"].astype(bool)
 
-    tukey_table = tukey_df.to_dict(orient="records")
+    # Tukey table as JSON
+    tukey_table = []
+    for _, r in tukey_df.iterrows():
+        dec = (
+            "Reject Null Hypothesis (H₀) → Significant difference"
+            if r["reject"] else
+            "Accept Null Hypothesis (H₀) → No difference"
+        )
+        tukey_table.append({
+            "group1": r["group1"],
+            "group2": r["group2"],
+            "meandiff": float(r["meandiff"]),
+            "p_adj": float(r["p-adj"]),
+            "reject": bool(r["reject"]),
+            "decision": dec
+        })
 
-    # ----- BOX PLOT -----
-    fig, ax = plt.subplots(figsize=(9,5))
-    sns.boxplot(data=df, x='city', y=pol, ax=ax)
-    plt.xticks(rotation=20)
-    box_plot = fig_to_base64(fig)
-    plt.close(fig)
-
-    # ----- VIOLIN PLOT -----
-    fig, ax = plt.subplots(figsize=(9,5))
-    sns.violinplot(data=df, x='city', y=pol, ax=ax)
-    plt.xticks(rotation=20)
-    violin_plot = fig_to_base64(fig)
-    plt.close(fig)
-
-    # ----- TUKEY HEATMAP -----
+    # ----- Tukey Heatmap -----
     labels = sorted(df['city'].unique())
     mat = pd.DataFrame(0, index=labels, columns=labels)
-
     for r in tukey_table:
-        g1 = r["group1"]
-        g2 = r["group2"]
-        reject = r["reject"]
-        mat.loc[g1, g2] = 1 if reject else 0
-        mat.loc[g2, g1] = 1 if reject else 0
+        if r["reject"]:
+            mat.loc[r["group1"], r["group2"]] = 1
+            mat.loc[r["group2"], r["group1"]] = 1
 
     fig, ax = plt.subplots(figsize=(7,5))
     sns.heatmap(mat, annot=True, cmap='Reds', cbar=False, ax=ax)
     tukey_plot = fig_to_base64(fig)
     plt.close(fig)
 
+    # ----- Plots -----
+    fig, ax = plt.subplots(figsize=(9,5))
+    sns.boxplot(data=df, x='city', y=pol, ax=ax)
+    plt.xticks(rotation=20)
+    box_plot = fig_to_base64(fig)
+    plt.close(fig)
+
+    fig, ax = plt.subplots(figsize=(9,5))
+    sns.violinplot(data=df, x='city', y=pol, ax=ax)
+    plt.xticks(rotation=20)
+    violin_plot = fig_to_base64(fig)
+    plt.close(fig)
+
     return convert_np({
+        "method": "One-way ANOVA",
+        "pollutant": pol.upper(),
+        "cities": req.cities,
+
+        "H0": H0,
+        "H1": H1,
+
         "fstat": float(fstat),
         "pvalue": float(pval),
-        "decision": "reject H0" if pval < 0.05 else "fail to reject H0",
+        "p_fmt": p_fmt,
+
+        "df_between": df_between,
+        "df_within": df_within,
+
+        "effect_size_eta2": float(eta_sq),
+
+        "decision": decision,
         "tukey_table": tukey_table,
         "tukey_plot": tukey_plot,
         "box_plot": box_plot,
@@ -767,29 +840,60 @@ async def chi_api(req: ChiRequest):
     if 'aqi' not in df.columns:
         raise HTTPException(status_code=400, detail="AQI missing")
 
-    # Categorize AQI
+    # ----- Categorize AQI -----
     bins = [0,50,100,200,300,400,500,9999]
     labels = ["Good","Satisfactory","Moderate","Poor","Very Poor","Severe","Hazardous"]
     df['cat'] = pd.cut(df['aqi'], bins=bins, labels=labels, include_lowest=True)
 
+    # ----- Contingency Table -----
     tab = pd.crosstab(df['city'], df['cat'])
 
-    from scipy.stats import chi2_contingency
     chi, p, dof, exp = chi2_contingency(tab)
 
-    # Heatmap
+    # ----- Hypotheses (A-style) -----
+    H0 = "AQI category distribution is the same across selected cities"
+    H1 = "AQI category distribution differs across selected cities"
+
+    # ----- Decision (Style-2) -----
+    decision = (
+        "Reject Null Hypothesis (H₀) → Significant association"
+        if p < 0.05 else
+        "Accept Null Hypothesis (H₀) → No significant association"
+    )
+
+    # ----- p formatting -----
+    p_fmt = "< 0.0001" if p < 1e-4 else f"{p:.5f}"
+
+    # ----- Cramer's V (Effect Size) -----
+    N = tab.values.sum()
+    r, c = tab.shape
+    cramers_v = np.sqrt(chi / (N * (min(r, c)-1))) if (N>0 and min(r,c)>1) else 0.0
+
+    # ----- Heatmap (unchanged) -----
     fig, ax = plt.subplots(figsize=(8,5))
-    sns.heatmap(tab, annot=True, cmap='Blues', fmt='d')
+    sns.heatmap(tab, annot=True, cmap='Blues', fmt='d', ax=ax)
     plt.title("City × AQI Category")
     heat = fig_to_base64(fig)
+    plt.close(fig)
 
     return convert_np({
-        "chisq": chi,
-        "pvalue": p,
-        "decision": "reject H0" if p<0.05 else "fail to reject H0",
+        "method": "Chi-square Independence Test",
+        "cities": req.cities,
+
+        "H0": H0,
+        "H1": H1,
+
+        "chisq": float(chi),
+        "pvalue": float(p),
+        "p_fmt": p_fmt,
+        "df": dof,
+        "effect_size_v": float(cramers_v),
+
+        "decision": decision,
         "plot": heat,
         "table": tab.to_dict()
     })
+
 
 # ================================================
 # SECTION — SUPPORT
